@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello World</title>
+  <script src="https://unpkg.com/react@latest/dist/react.js"></script>
+  <script src="https://unpkg.com/react-dom@latest/dist/react-dom.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+  <!-- BS4 -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+</head>
+
+<body>
+  <div id="root"></div>
+<script type="text/babel">
+    const proxyUrl ='https://cors-anywhere.herokuapp.com/'; 
+    const url = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
+    const url2 = 'http://api.chbtc.com/data/v1/ticker?currency=eth_cny';
+
+    class App extends React.Component{ 
+      constructor(props){
+        super(props);
+        this.state={
+          BT:{
+            time:'no start yet',
+            high:0,
+            low:0,
+            buy:0,
+            last:0,
+            sell:0,
+            vol:0
+          },
+          ET:{
+            time:'no start yet',
+            high:0,
+            low:0,
+            buy:0,
+            last:0,
+            sell:0,
+            vol:0
+          }
+        };
+        this.startBTC=this.startBTC.bind(this);
+        this.startETC=this.startETC.bind(this);
+        this.stop=this.stop.bind(this);
+      }
+
+      getSec(time){
+            console.log(time);
+            const year = time.getFullYear();
+            const month = time.getMonth();
+            const date = time.getDate();
+            const hour = time.getHours();
+            const min = time.getMinutes();
+            const sec = time.getSeconds();
+            return `${year}年${month}月${date}日${hour}點${min}分${sec}秒`;
+      }
+
+      componentDidMount() {
+        this.btcid=setInterval(()=>this.startBTC(),1000);
+        this.ethid=setInterval(()=>this.startETC(),1000)
+      }
+
+      startBTC(){ 
+          fetch(proxyUrl +url)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log(jsonResponse); 
+            console.log(Number(jsonResponse.date))
+            const time=this.getSec(new Date(Number(jsonResponse.date)));
+
+            this.setState({
+              BT:{
+                time:time,
+                high:jsonResponse.ticker.high,
+                low:jsonResponse.ticker.low,
+                buy:jsonResponse.ticker.buy,
+                last:jsonResponse.ticker.last,
+                sell:jsonResponse.ticker.sell,
+                vol:jsonResponse.ticker.vol
+              }
+            });
+          }) 
+      } 
+
+      startETC(){
+          fetch(proxyUrl +url2)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log(jsonResponse); 
+            const time=this.getSec(new Date(Number(jsonResponse.date)));
+            this.setState({
+              ET:{
+                time:time,
+                high:jsonResponse.ticker.high,
+                low:jsonResponse.ticker.low,
+                buy:jsonResponse.ticker.buy,
+                last:jsonResponse.ticker.last,
+                sell:jsonResponse.ticker.sell,
+                vol:jsonResponse.ticker.vol
+              }
+            });
+          }) 
+      }
+
+      stop(){
+        clearInterval(this.btcid);
+        clearInterval(this.ethid);
+        console.log('stop!');
+      }
+
+      render(){
+      return (
+        <div className="container" style={{marginTop:50}}>
+          <div className="row justify-content-around">
+            <div className="col-4">
+              <h3 className="alert alert-primary" role="alert">比特幣 Ticker</h3>
+              <div><span className="badge badge-primary">更新時間</span>：{this.state.BT.time}</div>
+              <ul className="list-group" style={{marginBottom:10}}>
+                <li className="list-group-item">最高價：{this.state.BT.high}</li>
+                <li className="list-group-item">最低價：{this.state.BT.low}</li>
+                <li className="list-group-item">buy價：{this.state.BT.buy}</li>
+                <li className="list-group-item">sell價：{this.state.BT.sell}</li>
+                <li className="list-group-item list-group-item-info">最新成交價：{this.state.BT.last}</li>
+                <li className="list-group-item">成交量：{this.state.BT.vol}</li>
+              </ul>
+
+            </div>
+            <div className="col-4">
+              <h3 className="alert alert-success" role="alert">以太幣 Ticker</h3>
+              <div><span className="badge badge-primary">更新時間</span>：{this.state.ET.time}</div>
+              <ul className="list-group" style={{marginBottom:10}}>
+                <li className="list-group-item">最高價：{this.state.ET.high}</li>
+                <li className="list-group-item">最低價：{this.state.ET.low}</li>
+                <li className="list-group-item">buy價：{this.state.ET.buy}</li>
+                <li className="list-group-item">sell價：{this.state.ET.sell}</li>
+                <li className="list-group-item list-group-item-info">最新成交價：{this.state.ET.last}</li>
+                <li className="list-group-item">成交量：{this.state.ET.vol}</li>
+              </ul>
+            </div>
+            
+          </div>
+          <div className="row justify-content-center">
+                {/*<button style={{marginRight:10}} className="btn btn-primary" onClick={this.start}>Get Data</button>*/}
+                <button className="btn btn-danger" onClick={this.stop}>Stop</button>
+          </div>
+        </div>
+    ); } } 
+    
+ReactDOM.render(<App />, document.getElementById('root') );
+  </script>
+</body>
+
+</html>
