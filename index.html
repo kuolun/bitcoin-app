@@ -54,24 +54,69 @@
             sell:0,
             avg:0
           },
+          huoBT:{
+            buy:0
+          },
+          chbBT:{
+            buy:0
+          },
+          maiBT:{
+            sell:0
+          },
+          bitBT:{
+            sell:0
+          },
           cexBT:{
             sell:0
           }
         };
         this.proxyUrl =proxyUrl; 
+        this.chbtcurl = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
         this.url='http://asper-bot-rates.appspot.com/currency.json';
         this.url2='https://cex.io/api/ticker/BTC/USD';
+        this.url3 ='https://api.maicoin.com/v1/prices/TWD';
+        this.url4 ='http://api.huobi.com/staticmarket/ticker_btc_json.js';
+        this.url5 = 'https://www.bitoex.com/api/v1/get_rate';
       }
 
       componentDidMount() {
         this.bankid=setInterval(()=>this.startBank(),1000);
         this.cexbtid=setInterval(()=>this.startCexioApi(),1500);
+        this.maiid=setInterval(()=>this.startMai(),1000);
+        this.huoid=setInterval(()=>this.startHuo(),1000);
+        this.bitid=setInterval(()=>this.startBit(),1000);
+        this.chbid=setInterval(()=>this.startChbtc(),1000);
       }
 
 
       componentWillUnmount(){
         clearInterval(this.bankid);
         clearInterval(this.cexbtid);
+        clearInterval(this.maiid);
+        clearInterval(this.bitid);
+        clearInterval(this.chbid);
+      }
+
+      startChbtc(){ 
+          fetch(this.proxyUrl +this.chbtcurl)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            // console.log(jsonResponse); 
+            console.log('ChbtcApi success')
+
+            this.setState(()=>{
+              return {
+                chbBT:{
+                  buy:Number(jsonResponse.ticker.buy),
+                }
+              };
+            });
+          }) 
       }
 
       startCexioApi(){ 
@@ -83,8 +128,8 @@
             throw new Error('Request failed!'); 
           },networkError=>console.log(networkError.message) )
           .then(jsonResponse=>{ 
-            console.log('Cexi:');
-            console.log(jsonResponse); 
+            console.log('Cexi success');
+            // console.log(jsonResponse); 
 
             this.setState(()=>{
               return {
@@ -105,8 +150,9 @@
           throw new Error('Request failed!'); 
         },networkError=>console.log(networkError.message) )
         .then(jsonResponse=>{ 
-          console.log(jsonResponse); 
-          console.log(Number(jsonResponse.date))
+          // console.log(jsonResponse); 
+          // console.log(Number(jsonResponse.date))
+          console.log('Bank api success');
 
           this.setState(()=>{
             return {
@@ -123,10 +169,103 @@
             };
           });
         }) 
-    }
+      }
+
+      startMai(){ 
+          fetch(this.proxyUrl +this.url3)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            // console.log(jsonResponse); 
+            console.log('MaicoinApi success');
+
+            this.setState(()=>{
+              return {
+                maiBT:{
+                  sell:Number(jsonResponse.sell_price)
+                }
+              };
+            });
+          }) 
+      }
+
+      startHuo(){ 
+          fetch(this.proxyUrl +this.url4)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            // console.log(jsonResponse); 
+            console.log('HuobiApi success')
+            this.setState(()=>{
+              return {
+                huoBT:{
+                  buy:Number(jsonResponse.ticker.buy)
+                }
+              };
+            });
+          }) 
+      }
+
+
+      startBit(){ 
+          fetch(this.proxyUrl +this.url5)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            // console.log(jsonResponse); 
+            console.log('BitoexApi success')
+
+            this.setState(()=>{
+              return {
+                bitBT:{
+                  sell:Number(jsonResponse.sell)
+                }
+              };
+            });
+          }) 
+      }
 
 
       render(){
+        let hBuy = this.state.huoBT.buy * this.state.RMB.avg;
+        let cBuy = this.state.chbBT.buy * this.state.RMB.avg;
+
+        let mSell = this.state.maiBT.sell;
+        let maiEarn = mSell-hBuy;
+        let maiEarnP= (maiEarn/hBuy)*100;
+
+        let bSell = this.state.bitBT.sell;
+        let bitEarn = bSell-hBuy;
+        let bitEarnP= ((bitEarn)/hBuy)*100;
+
+        let cSell = this.state.cexBT.sell*this.state.USD.avg;
+        let cexEarn = cSell-hBuy;
+        let cexEarnP= (cexEarn/hBuy)*100;
+
+        let maiEarn2 = mSell -cBuy;
+        let maiEarn2P = (maiEarn2/cBuy)*100;
+
+        let bitEarn2 = bSell -cBuy;
+        let bitEarn2P = (bitEarn2/cBuy)*100;
+
+        let cexEarn2 = cSell-cBuy;
+        let cexEarn2P= (cexEarn2/cBuy)*100;
+
+
+
+
       return (
         <div>
           <Row>
@@ -151,9 +290,9 @@
           </Row>  
           <Row>
             <Col md="5">
-              <HuobiApi RMB={this.state.RMB}/>
+              <HuobiApi huoBT={this.state.huoBT} RMB={this.state.RMB} USD={this.state.USD}/>
             </Col>
-            <Col md="4">
+            <Col md="5">
               <Table bordered size="sm">
                 <thead className="thead-default">
                   <tr>
@@ -170,45 +309,27 @@
                     <th scope="row">RMB</th>
                     <th scope="row">USD</th>
                   </tr>
-                  <MaicoinApi />
-                  <BitoexApi />
-                  <CexioApi USD={this.state.USD} cexBT={this.state.cexBT}/>
+                  <MaicoinApi maiBT={this.state.maiBT} USD={this.state.USD} RMB={this.state.RMB}/>
+                  <BitoexApi bitBT={this.state.bitBT} USD={this.state.USD} RMB={this.state.RMB}/>
+                  <CexioApi cexBT={this.state.cexBT} USD={this.state.USD}  RMB={this.state.RMB}/>
                 </tbody>
               </Table>
             </Col>
-            <Col md="3">
-              <Table bordered size="sm">
-                <thead className="thead-default">
-                  <tr>
-                    <th scope="col" colSpan="2"><center>損益試算</center></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="col">獲利</th>
-                    <th scope="col">獲利率</th>
-                  </tr>
-                  <tr>
-                    <td>4420</td>
-                    <td>3.52％</td>
-                  </tr>
-                  <tr>
-                    <td>-1102</td>
-                    <td>-0.88％</td>
-                  </tr>
-                  <tr>
-                    <td>7520</td>
-                    <td>5.99％</td>
-                  </tr>
-                </tbody>
-              </Table>
+            <Col md="2">
+              <Earn maiEarn={maiEarn}
+                    maiEarnP={maiEarnP}
+                    bitEarn={bitEarn}
+                    bitEarnP={bitEarnP}
+                    cexEarn={cexEarn}
+                    cexEarnP={cexEarnP}
+                    />
             </Col>
           </Row>
           <Row>
             <Col md="5">
-              <ChbtcApi RMB={this.state.RMB}/>
+              <ChbtcApi chbBT={this.state.chbBT} RMB={this.state.RMB} USD={this.state.USD}/>
             </Col>
-            <Col md="4">
+            <Col md="5">
               <Table bordered size="sm">
                 <thead className="thead-default">
                   <tr>
@@ -225,38 +346,20 @@
                     <th scope="row">RMB</th>
                     <th scope="row">USD</th>
                   </tr>
-                  <MaicoinApi />
-                  <BitoexApi />
-                  <CexioApi USD={this.state.USD} cexBT={this.state.cexBT}/>
+                  <MaicoinApi maiBT={this.state.maiBT} RMB={this.state.RMB} USD={this.state.USD} />
+                  <BitoexApi  bitBT={this.state.bitBT} RMB={this.state.RMB} USD={this.state.USD} />
+                  <CexioApi   cexBT={this.state.cexBT} RMB={this.state.RMB} USD={this.state.USD} />
                 </tbody>
               </Table>
             </Col>
-            <Col md="3">
-              <Table bordered size="sm">
-                <thead className="thead-default">
-                  <tr>
-                    <th scope="col" colSpan="2"><center>損益試算</center></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="col">獲利</th>
-                    <th scope="col">獲利率</th>
-                  </tr>
-                  <tr>
-                    <td>4420</td>
-                    <td>3.52％</td>
-                  </tr>
-                  <tr>
-                    <td>-1102</td>
-                    <td>-0.88％</td>
-                  </tr>
-                  <tr>
-                    <td>7520</td>
-                    <td>5.99％</td>
-                  </tr>
-                </tbody>
-              </Table>
+            <Col md="2">
+              <Earn maiEarn={maiEarn2}
+                    maiEarnP={maiEarn2P}
+                    bitEarn={bitEarn2}
+                    bitEarnP={bitEarn2P}
+                    cexEarn={cexEarn2}
+                    cexEarnP={cexEarn2P}
+                    />
             </Col>
           </Row>
           <Row>
@@ -273,6 +376,46 @@
           </Row>
           </div>
     ); } } 
+
+    class Earn extends React.Component{
+      render(){
+        let tdStyle = {};
+        if(this.props.cexEarnP>=10){
+          tdStyle={
+            color:'green',
+            fontWeight:'bold',
+            backgroundColor:'yellow'
+          }
+        }
+        return(
+          <Table bordered size="sm" style={{textAlign:'right'}}>
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="2"><center>損益試算</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">獲利</th>
+                    <th scope="col">獲利率</th>
+                  </tr>
+                  <tr>
+                    <td>{accounting.formatNumber(this.props.maiEarn)}</td>
+                    <td>{accounting.formatNumber(this.props.maiEarnP,2)}%</td>
+                  </tr>
+                  <tr>
+                    <td>{accounting.formatNumber(this.props.bitEarn)}</td>
+                    <td>{accounting.formatNumber(this.props.bitEarnP,2)}％</td>
+                  </tr>
+                  <tr>
+                    <td>{accounting.formatNumber(this.props.cexEarn)}</td>
+                    <td style={tdStyle}>{accounting.formatNumber(this.props.cexEarnP,2)}％</td>
+                  </tr>
+                </tbody>
+              </Table>
+        );
+      }
+    }
 
     class Bank extends React.Component{
       constructor(props){
@@ -293,13 +436,13 @@
                     <th scope="row">RMB</th>
                     <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.RMB.buy}</td>
                     <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.RMB.sell}</td>
-                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.RMB.avg}</td>
                   </tr>
                   <tr>
                     <th scope="row">USD</th>
                     <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.buy}</td>
                     <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.sell}</td>
-                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{(Number(this.props.USD.buy)+Number(this.props.USD.sell))/2}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.avg}</td>
                   </tr>
                   <tr>
                     <th scope="row">自訂匯率</th>
@@ -326,53 +469,6 @@
 
 
     class HuobiApi extends React.Component{
-      constructor(props){
-        super(props);
-        this.state={
-          BT:{
-            buy:0,
-            sell:0,
-          },
-          RMB:{
-            buy:0,
-            sell:0
-          }
-        }
-        this.proxyUrl =proxyUrl; 
-        this.url = 'http://api.huobi.com/staticmarket/ticker_btc_json.js';
-      }
-
-      componentDidMount() {
-        this.btcid=setInterval(()=>this.startBTC(),1000);
-      }
-
-      componentWillUnmount(){
-        clearInterval(this.btcid);
-      }
-
-      startBTC(){ 
-          fetch(this.proxyUrl +this.url)
-          .then(response=>{ 
-            if(response.ok){ 
-            return response.json(); 
-            } 
-            throw new Error('Request failed!'); 
-          },networkError=>console.log(networkError.message) )
-          .then(jsonResponse=>{ 
-            console.log(jsonResponse); 
-            console.log(Number(jsonResponse.date))
-
-            this.setState(()=>{
-              return {
-                BT:{
-                  buy:Number(jsonResponse.ticker.buy),
-                  sell:jsonResponse.ticker.sell,
-                }
-              };
-            });
-          }) 
-      }
-
       render(){
         return(
           <Table bordered size="sm">
@@ -396,11 +492,11 @@
                     <td>BTC</td>
                     <td>火幣網</td>
                     <td>1</td>
-                    <td style={{color:'blue',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy,2)}</td>
+                    <td style={{color:'blue',fontWeight:'bold'}}>{accounting.formatNumber(this.props.huoBT.buy,2)}</td>
                     <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy*this.props.RMB.avg,2)}</td>
-                    <td>0</td>
-                    <td>0</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.props.huoBT.buy*this.props.RMB.avg,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.props.huoBT.buy,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber((this.props.huoBT.buy*this.props.RMB.avg)/this.props.USD.avg,2)}</td>
                   </tr>
                 </tbody>
           </Table>
@@ -409,53 +505,6 @@
     }
 
     class ChbtcApi extends React.Component{
-      constructor(props){
-        super(props);
-        this.state={
-          BT:{
-            buy:0,
-            sell:0,
-          },
-          RMB:{
-            buy:0,
-            sell:0
-          }
-        }
-        this.proxyUrl =proxyUrl; 
-        this.url = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
-      }
-
-      componentDidMount() {
-        this.btcid=setInterval(()=>this.startBTC(),1000);
-      }
-
-      componentWillUnmount(){
-        clearInterval(this.btcid);
-      }
-
-      startBTC(){ 
-          fetch(this.proxyUrl +this.url)
-          .then(response=>{ 
-            if(response.ok){ 
-            return response.json(); 
-            } 
-            throw new Error('Request failed!'); 
-          },networkError=>console.log(networkError.message) )
-          .then(jsonResponse=>{ 
-            console.log(jsonResponse); 
-            console.log(Number(jsonResponse.date))
-
-            this.setState(()=>{
-              return {
-                BT:{
-                  buy:Number(jsonResponse.ticker.buy),
-                  sell:jsonResponse.ticker.sell,
-                }
-              };
-            });
-          }) 
-      }
-
       render(){
         return(
           <Table bordered size="sm">
@@ -479,11 +528,11 @@
                     <td>BTC</td>
                     <td>CHBTC</td>
                     <td>1</td>
-                    <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.buy}</td>
+                    <td style={{color:'blue',fontWeight:'bold'}}>{this.props.chbBT.buy}</td>
                     <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy*this.props.RMB.avg,2)}</td>
-                    <td>0</td>
-                    <td>0</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.props.chbBT.buy*this.props.RMB.avg,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.chbBT.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber((this.props.chbBT.buy*this.props.RMB.avg)/this.props.USD.avg,2)}</td>
                   </tr>
                 </tbody>
           </Table>
@@ -493,122 +542,32 @@
 
 
     class MaicoinApi extends React.Component{
-      constructor(props){
-        super(props);
-        this.state={
-          BT:{
-            time:'no start yet',
-            high:0,
-            low:0,
-            buy:0,
-            last:0,
-            sell:0,
-            vol:0
-          }
-        }
-        this.proxyUrl =proxyUrl; 
-        this.url = 'https://api.maicoin.com/v1/prices/TWD';
-      }
-
-      componentDidMount() {
-        this.btcid=setInterval(()=>this.startBTC(),1000);
-      }
-
-      componentWillUnmount(){
-        clearInterval(this.btcid);
-      }
-
-      startBTC(){ 
-          fetch(this.proxyUrl +this.url)
-          .then(response=>{ 
-            if(response.ok){ 
-            return response.json(); 
-            } 
-            throw new Error('Request failed!'); 
-          },networkError=>console.log(networkError.message) )
-          .then(jsonResponse=>{ 
-            console.log(jsonResponse); 
-
-            this.setState(()=>{
-              return {
-                BT:{
-                  sell:jsonResponse.sell_price,
-                }
-              };
-            });
-          }) 
-      }
       render(){
         return(
           <tr>
               <th scope="row">Maicoin</th>
               <td>1</td>
-              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
+              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.maiBT.sell,2)}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.maiBT.sell,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber((this.props.maiBT.sell)/this.props.RMB.avg,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber((this.props.maiBT.sell)/this.props.USD.avg,2)}</td>
           </tr>
         );
       }
     }
 
     class BitoexApi extends React.Component{
-      constructor(props){
-        super(props);
-        this.state={
-          BT:{
-            time:'no start yet',
-            high:0,
-            low:0,
-            buy:0,
-            last:0,
-            sell:0,
-            vol:0
-          }
-        }
-        this.proxyUrl =proxyUrl; 
-        this.url = 'https://www.bitoex.com/api/v1/get_rate';
-      }
-
-      componentDidMount() {
-        this.btcid=setInterval(()=>this.startBTC(),1000);
-      }
-
-      componentWillUnmount(){
-        clearInterval(this.btcid);
-      }
-
-      startBTC(){ 
-          fetch(this.proxyUrl +this.url)
-          .then(response=>{ 
-            if(response.ok){ 
-            return response.json(); 
-            } 
-            throw new Error('Request failed!'); 
-          },networkError=>console.log(networkError.message) )
-          .then(jsonResponse=>{ 
-            console.log(jsonResponse); 
-
-            this.setState(()=>{
-              return {
-                BT:{
-                  sell:jsonResponse.sell,
-                }
-              };
-            });
-          }) 
-      }
       render(){
         return(
           <tr>
               <th scope="row">Bitoex</th>
               <td>1</td>
-              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
+              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.bitBT.sell,2)}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.bitBT.sell,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber((this.props.bitBT.sell)/this.props.RMB.avg,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber((this.props.bitBT.sell)/this.props.USD.avg,2)}</td>
           </tr>
         );
       }
@@ -621,10 +580,10 @@
               <th scope="row">Cexio</th>
               <td>1</td>
               <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell,2)}</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.avg}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell*this.props.USD.avg,2)}</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
-              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber((this.props.cexBT.sell*this.props.USD.avg)/this.props.RMB.avg,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell,2)}</td>
           </tr>
         );
       }
