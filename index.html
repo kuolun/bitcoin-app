@@ -65,7 +65,7 @@
 
       componentDidMount() {
         this.bankid=setInterval(()=>this.startBank(),1000);
-        this.cexbtid=setInterval(()=>this.startCexioApi(),1000);
+        this.cexbtid=setInterval(()=>this.startCexioApi(),1500);
       }
 
 
@@ -545,9 +545,9 @@
               <td>1</td>
               <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
           </tr>
         );
       }
@@ -606,9 +606,9 @@
               <td>1</td>
               <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
           </tr>
         );
       }
@@ -623,8 +623,8 @@
               <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell,2)}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.avg}</td>
               <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell*this.props.USD.avg,2)}</td>
-              <td>0</td>
-              <td>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>0</td>
           </tr>
         );
       }
