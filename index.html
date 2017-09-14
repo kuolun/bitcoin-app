@@ -20,6 +20,8 @@
 <script type="text/babel">
     // for reactstrap
     const {
+      Table,
+      Container,
       Button,
       ButtonDropdown,
       ButtonGroup,
@@ -29,14 +31,212 @@
       DropdownMenu,
       DropdownToggle,
       TetherContent,
-      Tooltip
+      Tooltip,
+      Col,Row
     } = Reactstrap;
 
     const proxyUrl ='https://cors-anywhere.herokuapp.com/'; 
-    const url = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
-    const url2 = 'http://api.chbtc.com/data/v1/ticker?currency=eth_cny';
 
     class App extends React.Component{ 
+      constructor(props){
+        super(props);
+        this.state={
+          USD:{
+            buy:0,
+            sell:0
+          },
+          RMB:{
+            buy:0,
+            sell:0
+          }
+        };
+        this.proxyUrl =proxyUrl; 
+        this.url='http://asper-bot-rates.appspot.com/currency.json';
+      }
+
+      componentDidMount() {
+        this.bankid=setInterval(()=>this.startBank(),1000);
+      }
+
+
+      componentWillUnmount(){
+        clearInterval(this.bankid);
+      }
+
+    
+      startBank(){ 
+        fetch(this.proxyUrl +this.url)
+        .then(response=>{ 
+          if(response.ok){ 
+          return response.json(); 
+          } 
+          throw new Error('Request failed!'); 
+        },networkError=>console.log(networkError.message) )
+        .then(jsonResponse=>{ 
+          console.log(jsonResponse); 
+          console.log(Number(jsonResponse.date))
+
+          this.setState(()=>{
+            return {
+              USD:{
+                buy:jsonResponse.rates.USD.buyCash,
+                sell:jsonResponse.rates.USD.sellCash
+              },
+              RMB:{
+                buy:jsonResponse.rates.CNY.buyCash,
+                sell:jsonResponse.rates.CNY.sellCash
+              }
+            };
+          });
+        }) 
+    }
+
+
+      render(){
+      return (
+        <div>
+          <Row>
+            <Col md="2">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col"><center>匯率</center></th>
+                    <th scope="col"><center>幣種</center></th>
+                    <th scope="col"><center>Qty</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>台銀均價</td>
+                    <td>BTC</td>
+                    <td>1</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Col>
+          </Row>  
+          <Row>
+            <Col md="5">
+              <HuobiApi RMB={this.state.RMB}/>
+            </Col>
+            <Col md="4">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="7" ><center>出金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">交易所</th>
+                    <th scope="row">Qty</th>
+                    <th scope="row">賣價</th>
+                    <th scope="row">匯率</th>
+                    <th scope="row">NTD</th>
+                    <th scope="row">RMB</th>
+                    <th scope="row">USD</th>
+                  </tr>
+                  <MaicoinApi />
+                  <BitoexApi />
+                  <CexioApi USD={this.state.USD}/>
+                </tbody>
+              </Table>
+            </Col>
+            <Col md="3">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="2"><center>損益試算</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">獲利</th>
+                    <th scope="col">獲利率</th>
+                  </tr>
+                  <tr>
+                    <td>4420</td>
+                    <td>3.52％</td>
+                  </tr>
+                  <tr>
+                    <td>-1102</td>
+                    <td>-0.88％</td>
+                  </tr>
+                  <tr>
+                    <td>7520</td>
+                    <td>5.99％</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Col>
+          </Row>
+          <Row>
+            <Col md="3">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th  scope="col" colSpan="4"><center>現金匯率</center></th>
+                  </tr>
+                </thead>
+                <Bank USD={this.state.USD} RMB={this.state.RMB}/>
+              </Table>
+            </Col>
+          </Row>
+          </div>
+    ); } } 
+
+    class Bank extends React.Component{
+      constructor(props){
+        super(props);
+      }
+
+
+      render(){
+        return(
+          <tbody>
+                  <tr>
+                    <th></th>
+                    <th scope="col">銀行買價</th>
+                    <th scope="col">銀行賣價</th>
+                    <th scope="col">買賣均價</th>
+                  </tr>
+                  <tr>
+                    <th scope="row">RMB</th>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.sell}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">USD</th>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.sell}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.USD.buy)+Number(this.props.USD.sell))/2}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">自訂匯率</th>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">USD</th>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RMB</th>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                </tbody>        
+        );
+      }
+    }
+
+
+    class HuobiApi extends React.Component{
       constructor(props){
         super(props);
         this.state={
@@ -49,39 +249,25 @@
             sell:0,
             vol:0
           },
-          ET:{
-            time:'no start yet',
-            high:0,
-            low:0,
+          RMB:{
             buy:0,
-            last:0,
-            sell:0,
-            vol:0
+            sell:0
           }
-        };
-        this.startBTC=this.startBTC.bind(this);
-        this.startETC=this.startETC.bind(this);
-        this.stop=this.stop.bind(this);
-      }
-
-      getSec(time){
-            console.log(time);
-            const year = time.getFullYear();
-            const month = time.getMonth();
-            const date = time.getDate();
-            const hour = time.getHours();
-            const min = time.getMinutes();
-            const sec = time.getSeconds();
-            return `${year}年${month}月${date}日${hour}點${min}分${sec}秒`;
+        }
+        this.proxyUrl =proxyUrl; 
+        this.url = 'http://api.huobi.com/staticmarket/ticker_btc_json.js';
       }
 
       componentDidMount() {
         this.btcid=setInterval(()=>this.startBTC(),1000);
-        this.ethid=setInterval(()=>this.startETC(),1000)
+      }
+
+      componentWillUnmount(){
+        clearInterval(this.btcid);
       }
 
       startBTC(){ 
-          fetch(proxyUrl +url)
+          fetch(this.proxyUrl +this.url)
           .then(response=>{ 
             if(response.ok){ 
             return response.json(); 
@@ -91,24 +277,86 @@
           .then(jsonResponse=>{ 
             console.log(jsonResponse); 
             console.log(Number(jsonResponse.date))
-            const time=this.getSec(new Date(Number(jsonResponse.date)));
 
-            this.setState({
-              BT:{
-                time:time,
-                high:jsonResponse.ticker.high,
-                low:jsonResponse.ticker.low,
-                buy:jsonResponse.ticker.buy,
-                last:jsonResponse.ticker.last,
-                sell:jsonResponse.ticker.sell,
-                vol:jsonResponse.ticker.vol
-              }
+            this.setState(()=>{
+              return {
+                BT:{
+                  high:jsonResponse.ticker.high,
+                  low:jsonResponse.ticker.low,
+                  buy:jsonResponse.ticker.buy,
+                  last:jsonResponse.ticker.last,
+                  sell:jsonResponse.ticker.sell,
+                  vol:jsonResponse.ticker.vol
+                }
+              };
             });
           }) 
-      } 
+      }
 
-      startETC(){
-          fetch(proxyUrl +url2)
+      render(){
+        return(
+          <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="8"><center>入金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">幣種</th>
+                    <th scope="col">交易所</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">買價</th>
+                    <th scope="col">匯率</th>
+                    <th scope="col">NTD</th>
+                    <th scope="col">RMB</th>
+                    <th scope="col">USD</th>
+                  </tr>
+                  <tr>
+                    <td>BTC</td>
+                    <td>火幣網</td>
+                    <td>1</td>
+                    <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                </tbody>
+          </Table>
+        );
+      }
+    }
+
+
+    class MaicoinApi extends React.Component{
+      constructor(props){
+        super(props);
+        this.state={
+          BT:{
+            time:'no start yet',
+            high:0,
+            low:0,
+            buy:0,
+            last:0,
+            sell:0,
+            vol:0
+          }
+        }
+        this.proxyUrl =proxyUrl; 
+        this.url = 'https://api.maicoin.com/v1/prices/TWD';
+      }
+
+      componentDidMount() {
+        this.btcid=setInterval(()=>this.startBTC(),1000);
+      }
+
+      componentWillUnmount(){
+        clearInterval(this.btcid);
+      }
+
+      startBTC(){ 
+          fetch(this.proxyUrl +this.url)
           .then(response=>{ 
             if(response.ok){ 
             return response.json(); 
@@ -117,65 +365,152 @@
           },networkError=>console.log(networkError.message) )
           .then(jsonResponse=>{ 
             console.log(jsonResponse); 
-            const time=this.getSec(new Date(Number(jsonResponse.date)));
-            this.setState({
-              ET:{
-                time:time,
-                high:jsonResponse.ticker.high,
-                low:jsonResponse.ticker.low,
-                buy:jsonResponse.ticker.buy,
-                last:jsonResponse.ticker.last,
-                sell:jsonResponse.ticker.sell,
-                vol:jsonResponse.ticker.vol
-              }
+
+            this.setState(()=>{
+              return {
+                BT:{
+                  sell:jsonResponse.sell_price,
+                }
+              };
             });
           }) 
       }
+      render(){
+        return(
+          <tr>
+              <th scope="row">Maicoin</th>
+              <td>1</td>
+              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
+              <td style={{color:'#596043',fontWeight:'bold'}}>台銀均價</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+          </tr>
+        );
+      }
+    }
 
-      stop(){
-        clearInterval(this.btcid);
-        clearInterval(this.ethid);
-        console.log('stop!');
+    class BitoexApi extends React.Component{
+      constructor(props){
+        super(props);
+        this.state={
+          BT:{
+            time:'no start yet',
+            high:0,
+            low:0,
+            buy:0,
+            last:0,
+            sell:0,
+            vol:0
+          }
+        }
+        this.proxyUrl =proxyUrl; 
+        this.url = 'https://www.bitoex.com/api/v1/get_rate';
       }
 
-      render(){
-      return (
-        <div className="container" style={{marginTop:50}}>
-          <Button color="danger">danger</Button>
-          <div className="row justify-content-around">
-            <div className="col-4">
-              <h3 className="alert alert-primary" role="alert">比特幣 Ticker</h3>
-              <div><span className="badge badge-primary">更新時間</span>：{this.state.BT.time}</div>
-              <ul className="list-group" style={{marginBottom:10}}>
-                <li className="list-group-item">最高價：{this.state.BT.high}</li>
-                <li className="list-group-item">最低價：{this.state.BT.low}</li>
-                <li className="list-group-item">buy價：{this.state.BT.buy}</li>
-                <li className="list-group-item">sell價：{this.state.BT.sell}</li>
-                <li className="list-group-item list-group-item-info">最新成交價：{this.state.BT.last}</li>
-                <li className="list-group-item">成交量：{this.state.BT.vol}</li>
-              </ul>
+      componentDidMount() {
+        this.btcid=setInterval(()=>this.startBTC(),1000);
+      }
 
-            </div>
-            <div className="col-4">
-              <h3 className="alert alert-success" role="alert">以太幣 Ticker</h3>
-              <div><span className="badge badge-primary">更新時間</span>：{this.state.ET.time}</div>
-              <ul className="list-group" style={{marginBottom:10}}>
-                <li className="list-group-item">最高價：{this.state.ET.high}</li>
-                <li className="list-group-item">最低價：{this.state.ET.low}</li>
-                <li className="list-group-item">buy價：{this.state.ET.buy}</li>
-                <li className="list-group-item">sell價：{this.state.ET.sell}</li>
-                <li className="list-group-item list-group-item-info">最新成交價：{this.state.ET.last}</li>
-                <li className="list-group-item">成交量：{this.state.ET.vol}</li>
-              </ul>
-            </div>
-            
-          </div>
-          <div className="row justify-content-center">
-                {/*<button style={{marginRight:10}} className="btn btn-primary" onClick={this.start}>Get Data</button>*/}
-                <button className="btn btn-danger" onClick={this.stop}>Stop</button>
-          </div>
-        </div>
-    ); } } 
+      componentWillUnmount(){
+        clearInterval(this.btcid);
+      }
+
+      startBTC(){ 
+          fetch(this.proxyUrl +this.url)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log(jsonResponse); 
+
+            this.setState(()=>{
+              return {
+                BT:{
+                  sell:jsonResponse.sell,
+                }
+              };
+            });
+          }) 
+      }
+      render(){
+        return(
+          <tr>
+              <th scope="row">Bitoex</th>
+              <td>1</td>
+              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
+              <td style={{color:'#596043',fontWeight:'bold'}}>台銀均價</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+          </tr>
+        );
+      }
+    }
+
+    class CexioApi extends React.Component{
+      constructor(props){
+        super(props);
+        this.state={
+          BT:{
+            time:'no start yet',
+            high:0,
+            low:0,
+            buy:0,
+            last:0,
+            sell:0,
+            vol:0
+          }
+        }
+        this.proxyUrl =proxyUrl; 
+        this.url = 'https://cex.io/api/ticker/BTC/USD';
+      }
+
+      componentDidMount() {
+        this.btcid=setInterval(()=>this.startBTC(),1000);
+      }
+
+      componentWillUnmount(){
+        clearInterval(this.btcid);
+      }
+
+      startBTC(){ 
+          fetch(this.proxyUrl +this.url)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log(jsonResponse); 
+
+            this.setState(()=>{
+              return {
+                BT:{
+                  sell:jsonResponse.ask,
+                }
+              };
+            });
+          }) 
+      }
+      render(){
+        return(
+          <tr>
+              <th scope="row">Cexio</th>
+              <td>1</td>
+              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
+              <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.sell}</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+          </tr>
+        );
+      }
+    }
     
 ReactDOM.render(<App />, document.getElementById('root') );
   </script>
