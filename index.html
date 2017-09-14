@@ -13,6 +13,9 @@
   <script type="text/javascript" src="https://npmcdn.com/react@15/dist/react-with-addons.js"></script>
   <!-- reactstrap -->
   <script type="text/javascript" src="https://unpkg.com/reactstrap/dist/reactstrap.min.js"></script>
+  <!-- 數字處理 -->
+  <!-- 要改成rawgit -->
+  <script type="text/javascript" src="https://rawgit.com/openexchangerates/accounting.js/master/accounting.min.js"></script>
 </head>
 
 <body>
@@ -50,21 +53,48 @@
             buy:0,
             sell:0,
             avg:0
+          },
+          cexBT:{
+            sell:0
           }
         };
         this.proxyUrl =proxyUrl; 
         this.url='http://asper-bot-rates.appspot.com/currency.json';
+        this.url2='https://cex.io/api/ticker/BTC/USD';
       }
 
       componentDidMount() {
         this.bankid=setInterval(()=>this.startBank(),1000);
+        this.cexbtid=setInterval(()=>this.startCexioApi(),1000);
       }
 
 
       componentWillUnmount(){
         clearInterval(this.bankid);
+        clearInterval(this.cexbtid);
       }
 
+      startCexioApi(){ 
+          fetch(this.proxyUrl +this.url2)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log('Cexi:');
+            console.log(jsonResponse); 
+
+            this.setState(()=>{
+              return {
+                cexBT:{
+                  sell:Number(jsonResponse.ask),
+                }
+              };
+            });
+          }) 
+      }
     
       startBank(){ 
         fetch(this.proxyUrl +this.url)
@@ -81,14 +111,14 @@
           this.setState(()=>{
             return {
               USD:{
-                buy:jsonResponse.rates.USD.buyCash,
-                sell:jsonResponse.rates.USD.sellCash,
-                avg:(Number(jsonResponse.rates.USD.buyCash)+Number(jsonResponse.rates.USD.sellCash))/2
+                buy:Number(jsonResponse.rates.USD.buyCash).toFixed(2),
+                sell:Number(jsonResponse.rates.USD.sellCash).toFixed(2),
+                avg:((Number(jsonResponse.rates.USD.buyCash)+Number(jsonResponse.rates.USD.sellCash))/2).toFixed(2)
               },
               RMB:{
-                buy:jsonResponse.rates.CNY.buyCash,
-                sell:jsonResponse.rates.CNY.sellCash,
-                avg:(Number(jsonResponse.rates.CNY.buyCash)+Number(jsonResponse.rates.CNY.sellCash))/2
+                buy:Number(jsonResponse.rates.CNY.buyCash).toFixed(2),
+                sell:Number(jsonResponse.rates.CNY.sellCash).toFixed(2),
+                avg:((Number(jsonResponse.rates.CNY.buyCash)+Number(jsonResponse.rates.CNY.sellCash))/2).toFixed(2)
               }
             };
           });
@@ -142,7 +172,62 @@
                   </tr>
                   <MaicoinApi />
                   <BitoexApi />
-                  <CexioApi USD={this.state.USD}/>
+                  <CexioApi USD={this.state.USD} cexBT={this.state.cexBT}/>
+                </tbody>
+              </Table>
+            </Col>
+            <Col md="3">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="2"><center>損益試算</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">獲利</th>
+                    <th scope="col">獲利率</th>
+                  </tr>
+                  <tr>
+                    <td>4420</td>
+                    <td>3.52％</td>
+                  </tr>
+                  <tr>
+                    <td>-1102</td>
+                    <td>-0.88％</td>
+                  </tr>
+                  <tr>
+                    <td>7520</td>
+                    <td>5.99％</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Col>
+          </Row>
+          <Row>
+            <Col md="5">
+              <ChbtcApi RMB={this.state.RMB}/>
+            </Col>
+            <Col md="4">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="7" ><center>出金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">交易所</th>
+                    <th scope="row">Qty</th>
+                    <th scope="row">賣價</th>
+                    <th scope="row">匯率</th>
+                    <th scope="row">NTD</th>
+                    <th scope="row">RMB</th>
+                    <th scope="row">USD</th>
+                  </tr>
+                  <MaicoinApi />
+                  <BitoexApi />
+                  <CexioApi USD={this.state.USD} cexBT={this.state.cexBT}/>
                 </tbody>
               </Table>
             </Col>
@@ -206,15 +291,15 @@
                   </tr>
                   <tr>
                     <th scope="row">RMB</th>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.buy}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.sell}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.RMB.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.RMB.sell}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
                   </tr>
                   <tr>
                     <th scope="row">USD</th>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.buy}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.sell}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.USD.buy)+Number(this.props.USD.sell))/2}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.buy}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.sell}</td>
+                    <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{(Number(this.props.USD.buy)+Number(this.props.USD.sell))/2}</td>
                   </tr>
                   <tr>
                     <th scope="row">自訂匯率</th>
@@ -280,7 +365,7 @@
             this.setState(()=>{
               return {
                 BT:{
-                  buy:jsonResponse.ticker.buy,
+                  buy:Number(jsonResponse.ticker.buy),
                   sell:jsonResponse.ticker.sell,
                 }
               };
@@ -311,9 +396,92 @@
                     <td>BTC</td>
                     <td>火幣網</td>
                     <td>1</td>
+                    <td style={{color:'blue',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy*this.props.RMB.avg,2)}</td>
+                    <td>0</td>
+                    <td>0</td>
+                  </tr>
+                </tbody>
+          </Table>
+        );
+      }
+    }
+
+    class ChbtcApi extends React.Component{
+      constructor(props){
+        super(props);
+        this.state={
+          BT:{
+            buy:0,
+            sell:0,
+          },
+          RMB:{
+            buy:0,
+            sell:0
+          }
+        }
+        this.proxyUrl =proxyUrl; 
+        this.url = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
+      }
+
+      componentDidMount() {
+        this.btcid=setInterval(()=>this.startBTC(),1000);
+      }
+
+      componentWillUnmount(){
+        clearInterval(this.btcid);
+      }
+
+      startBTC(){ 
+          fetch(this.proxyUrl +this.url)
+          .then(response=>{ 
+            if(response.ok){ 
+            return response.json(); 
+            } 
+            throw new Error('Request failed!'); 
+          },networkError=>console.log(networkError.message) )
+          .then(jsonResponse=>{ 
+            console.log(jsonResponse); 
+            console.log(Number(jsonResponse.date))
+
+            this.setState(()=>{
+              return {
+                BT:{
+                  buy:Number(jsonResponse.ticker.buy),
+                  sell:jsonResponse.ticker.sell,
+                }
+              };
+            });
+          }) 
+      }
+
+      render(){
+        return(
+          <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="8"><center>入金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">幣種</th>
+                    <th scope="col">交易所</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">買價</th>
+                    <th scope="col">匯率</th>
+                    <th scope="col">NTD</th>
+                    <th scope="col">RMB</th>
+                    <th scope="col">USD</th>
+                  </tr>
+                  <tr>
+                    <td>BTC</td>
+                    <td>CHBTC</td>
+                    <td>1</td>
                     <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.buy}</td>
                     <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{Math.floor(Number(this.state.BT.buy)*this.props.RMB.avg)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.state.BT.buy*this.props.RMB.avg,2)}</td>
                     <td>0</td>
                     <td>0</td>
                   </tr>
@@ -375,8 +543,8 @@
           <tr>
               <th scope="row">Maicoin</th>
               <td>1</td>
-              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
-              <td style={{color:'#596043',fontWeight:'bold'}}>台銀均價</td>
+              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
               <td>0</td>
               <td>0</td>
               <td>0</td>
@@ -436,8 +604,8 @@
           <tr>
               <th scope="row">Bitoex</th>
               <td>1</td>
-              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
-              <td style={{color:'#596043',fontWeight:'bold'}}>台銀均價</td>
+              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.state.BT.sell,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>台銀均價</td>
               <td>0</td>
               <td>0</td>
               <td>0</td>
@@ -447,59 +615,14 @@
     }
 
     class CexioApi extends React.Component{
-      constructor(props){
-        super(props);
-        this.state={
-          BT:{
-            time:'no start yet',
-            high:0,
-            low:0,
-            buy:0,
-            last:0,
-            sell:0,
-            vol:0
-          }
-        }
-        this.proxyUrl =proxyUrl; 
-        this.url = 'https://cex.io/api/ticker/BTC/USD';
-      }
-
-      componentDidMount() {
-        this.btcid=setInterval(()=>this.startBTC(),1000);
-      }
-
-      componentWillUnmount(){
-        clearInterval(this.btcid);
-      }
-
-      startBTC(){ 
-          fetch(this.proxyUrl +this.url)
-          .then(response=>{ 
-            if(response.ok){ 
-            return response.json(); 
-            } 
-            throw new Error('Request failed!'); 
-          },networkError=>console.log(networkError.message) )
-          .then(jsonResponse=>{ 
-            console.log(jsonResponse); 
-
-            this.setState(()=>{
-              return {
-                BT:{
-                  sell:jsonResponse.ask,
-                }
-              };
-            });
-          }) 
-      }
       render(){
         return(
           <tr>
               <th scope="row">Cexio</th>
               <td>1</td>
-              <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
-              <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.avg}</td>
-              <td style={{color:'#596043',fontWeight:'bold'}}>{Math.floor(Number(this.state.BT.sell)*this.props.USD.avg)}</td>
+              <td style={{color:'blue',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell,2)}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{this.props.USD.avg}</td>
+              <td style={{color:'#596043',fontWeight:'bold',textAlign:'right'}}>{accounting.formatNumber(this.props.cexBT.sell*this.props.USD.avg,2)}</td>
               <td>0</td>
               <td>0</td>
           </tr>
