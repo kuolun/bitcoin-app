@@ -9,11 +9,29 @@
   <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
   <!-- BS4 -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+  <!-- react addon -->
+  <script type="text/javascript" src="https://npmcdn.com/react@15/dist/react-with-addons.js"></script>
+  <!-- reactstrap -->
+  <script type="text/javascript" src="https://unpkg.com/reactstrap/dist/reactstrap.min.js"></script>
 </head>
 
 <body>
   <div id="root"></div>
 <script type="text/babel">
+    // for reactstrap
+    const {
+      Button,
+      ButtonDropdown,
+      ButtonGroup,
+      ButtonToolbar,
+      Dropdown,
+      DropdownItem,
+      DropdownMenu,
+      DropdownToggle,
+      TetherContent,
+      Tooltip
+    } = Reactstrap;
+
     const proxyUrl ='https://cors-anywhere.herokuapp.com/'; 
     const url = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
     const url2 = 'http://api.chbtc.com/data/v1/ticker?currency=eth_cny';
@@ -123,6 +141,7 @@
       render(){
       return (
         <div className="container" style={{marginTop:50}}>
+          <Button color="danger">danger</Button>
           <div className="row justify-content-around">
             <div className="col-4">
               <h3 className="alert alert-primary" role="alert">比特幣 Ticker</h3>
