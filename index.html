@@ -43,11 +43,13 @@
         this.state={
           USD:{
             buy:0,
-            sell:0
+            sell:0,
+            avg:0
           },
           RMB:{
             buy:0,
-            sell:0
+            sell:0,
+            avg:0
           }
         };
         this.proxyUrl =proxyUrl; 
@@ -80,11 +82,13 @@
             return {
               USD:{
                 buy:jsonResponse.rates.USD.buyCash,
-                sell:jsonResponse.rates.USD.sellCash
+                sell:jsonResponse.rates.USD.sellCash,
+                avg:(Number(jsonResponse.rates.USD.buyCash)+Number(jsonResponse.rates.USD.sellCash))/2
               },
               RMB:{
                 buy:jsonResponse.rates.CNY.buyCash,
-                sell:jsonResponse.rates.CNY.sellCash
+                sell:jsonResponse.rates.CNY.sellCash,
+                avg:(Number(jsonResponse.rates.CNY.buyCash)+Number(jsonResponse.rates.CNY.sellCash))/2
               }
             };
           });
@@ -241,13 +245,8 @@
         super(props);
         this.state={
           BT:{
-            time:'no start yet',
-            high:0,
-            low:0,
             buy:0,
-            last:0,
             sell:0,
-            vol:0
           },
           RMB:{
             buy:0,
@@ -281,12 +280,8 @@
             this.setState(()=>{
               return {
                 BT:{
-                  high:jsonResponse.ticker.high,
-                  low:jsonResponse.ticker.low,
                   buy:jsonResponse.ticker.buy,
-                  last:jsonResponse.ticker.last,
                   sell:jsonResponse.ticker.sell,
-                  vol:jsonResponse.ticker.vol
                 }
               };
             });
@@ -317,8 +312,8 @@
                     <td>火幣網</td>
                     <td>1</td>
                     <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.buy}</td>
-                    <td style={{color:'#596043',fontWeight:'bold'}}>{(Number(this.props.RMB.buy)+Number(this.props.RMB.sell))/2}</td>
-                    <td>0</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{Math.floor(Number(this.state.BT.buy)*this.props.RMB.avg)}</td>
                     <td>0</td>
                     <td>0</td>
                   </tr>
@@ -503,8 +498,8 @@
               <th scope="row">Cexio</th>
               <td>1</td>
               <td style={{color:'blue',fontWeight:'bold'}}>{this.state.BT.sell}</td>
-              <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.sell}</td>
-              <td>0</td>
+              <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.USD.avg}</td>
+              <td style={{color:'#596043',fontWeight:'bold'}}>{Math.floor(Number(this.state.BT.sell)*this.props.USD.avg)}</td>
               <td>0</td>
               <td>0</td>
           </tr>
