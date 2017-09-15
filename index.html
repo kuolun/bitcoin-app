@@ -3,19 +3,28 @@
 
 <head>
   <meta charset="UTF-8" />
+  <!-- 固定時間重刷頁面 -->
+  <!-- <meta http-equiv="refresh" content="600"> -->
+
   <title>BTC App</title>
   <script src="https://unpkg.com/react@latest/dist/react.js"></script>
   <script src="https://unpkg.com/react-dom@latest/dist/react-dom.js"></script>
   <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+  <!-- for Alert -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-transition-group/1.2.0/react-transition-group.min.js"></script>
   <!-- BS4 -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
   <!-- react addon -->
   <script type="text/javascript" src="https://npmcdn.com/react@15/dist/react-with-addons.js"></script>
   <!-- reactstrap -->
   <script type="text/javascript" src="https://unpkg.com/reactstrap/dist/reactstrap.min.js"></script>
+
   <!-- 數字處理 -->
   <!-- 要改成rawgit -->
   <script type="text/javascript" src="https://rawgit.com/openexchangerates/accounting.js/master/accounting.min.js"></script>
+
+  
+
 </head>
 
 <body>
@@ -23,6 +32,7 @@
 <script type="text/babel">
     // for reactstrap
     const {
+      Alert,
       Table,
       Container,
       Button,
@@ -44,31 +54,14 @@
       constructor(props){
         super(props);
         this.state={
-          USD:{
-            buy:0,
-            sell:0,
-            avg:0
-          },
-          RMB:{
-            buy:0,
-            sell:0,
-            avg:0
-          },
-          huoBT:{
-            buy:0
-          },
-          chbBT:{
-            buy:0
-          },
-          maiBT:{
-            sell:0
-          },
-          bitBT:{
-            sell:0
-          },
-          cexBT:{
-            sell:0
-          }
+          USD:{buy:0,sell:0,avg:0},
+          RMB:{buy:0,sell:0,avg:0},
+          chbBT:{buy:0,res:''},
+          huoBT:{buy:0,res:''},
+          maiBT:{sell:0,res:''},
+          bitBT:{sell:0,res:''},
+          cexBT:{sell:0,res:''},
+          countdown:600
         };
         this.proxyUrl =proxyUrl; 
         this.chbtcurl = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
@@ -80,12 +73,20 @@
       }
 
       componentDidMount() {
-        this.bankid=setInterval(()=>this.startBank(),1000);
-        this.cexbtid=setInterval(()=>this.startCexioApi(),1500);
-        this.maiid=setInterval(()=>this.startMai(),1000);
-        this.huoid=setInterval(()=>this.startHuo(),1000);
-        this.bitid=setInterval(()=>this.startBit(),1000);
-        this.chbid=setInterval(()=>this.startChbtc(),1000);
+        this.bankid=setInterval(()=>this.startBank(),5000);
+        // this.cexbtid=setInterval(()=>this.startCexioApi(),5000);
+        // this.maiid=setInterval(()=>this.startMai(),5000);
+        // this.huoid=setInterval(()=>this.startHuo(),5000);
+        // this.bitid=setInterval(()=>this.startBit(),5000);
+        // this.chbid=setInterval(()=>this.startChbtc(),5000);
+        this.counterid=setInterval(()=>this.refresh(),1000)
+
+
+        this.checkMai();
+        this.checkCex();
+        this.checkHuo();
+        this.checkBit();
+        this.checkChbtc();
       }
 
 
@@ -95,6 +96,17 @@
         clearInterval(this.maiid);
         clearInterval(this.bitid);
         clearInterval(this.chbid);
+        clearInterval(this.counterid);
+      }
+
+      refresh(){
+        this.setState((prevState)=>{
+          if(prevState.countdown>0)
+          return {
+            countdown:prevState.countdown-1
+          }
+          window.location.reload();
+        })
       }
 
       startChbtc(){ 
@@ -113,11 +125,154 @@
               return {
                 chbBT:{
                   buy:Number(jsonResponse.ticker.buy),
+                  res:'success'
                 }
               };
             });
-          }) 
+          })
+          .catch(()=>{
+            console.log('ChbtcApi error')
+            this.setState(()=>({chbBT:{res:'error'}}))
+          }); 
       }
+
+      async testCex(){
+        try{
+          let res = await fetch(this.proxyUrl +this.url2);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Cexi success');
+            this.setState(()=>{
+              return {
+                cexBT:{
+                  sell:Number(jsonResponse.ask),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+      checkCex(){
+        do{this.testCex()}
+        while(this.state.cexBT.res==='success'){
+          this.testCex();
+        }
+      }
+
+      async testMai(){
+        try{
+          let res = await fetch(this.proxyUrl +this.url3);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Mai success');
+            this.setState(()=>{
+              return {
+                maiBT:{
+                  sell:Number(jsonResponse.sell_price),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+      checkMai(){
+        do{this.testMai()}
+        while(this.state.maiBT.res==='success'){
+          this.testMai();
+        }
+      }  
+
+      async testHuo(){
+        try{
+          let res = await fetch(this.proxyUrl +this.url4);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Huo success');
+            this.setState(()=>{
+              return {
+                huoBT:{
+                  buy:Number(jsonResponse.ticker.buy),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+      checkHuo(){
+        do{this.testHuo()}
+        while(this.state.huoBT.res==='success'){
+          this.testHuo();
+        }
+      }       
+
+      async testBit(){
+        try{
+          let res = await fetch(this.proxyUrl +this.url5);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Huo success');
+            this.setState(()=>{
+              return {
+                bitBT:{
+                  sell:Number(jsonResponse.sell),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+      checkBit(){
+        do{this.testBit()}
+        while(this.state.bitBT.res==='success'){
+          this.testBit();
+        }
+      } 
+
+      async testChbtc(){
+        try{
+          let res = await fetch(this.proxyUrl +this.chbtcurl);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Chbtc success');
+            this.setState(()=>{
+              return {
+                chbBT:{
+                  buy:Number(jsonResponse.ticker.buy),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+      checkChbtc(){
+        do{this.testChbtc()}
+        while(this.state.chbBT.res==='success'){
+          this.testChbtc();
+        }
+      } 
+
+
+
 
       startCexioApi(){ 
           fetch(this.proxyUrl +this.url2)
@@ -135,6 +290,7 @@
               return {
                 cexBT:{
                   sell:Number(jsonResponse.ask),
+                  res:'success'
                 }
               };
             });
@@ -186,7 +342,8 @@
             this.setState(()=>{
               return {
                 maiBT:{
-                  sell:Number(jsonResponse.sell_price)
+                  sell:Number(jsonResponse.sell_price),
+                  res:'success'
                 }
               };
             });
@@ -207,7 +364,8 @@
             this.setState(()=>{
               return {
                 huoBT:{
-                  buy:Number(jsonResponse.ticker.buy)
+                  buy:Number(jsonResponse.ticker.buy),
+                  res:'success'
                 }
               };
             });
@@ -230,11 +388,23 @@
             this.setState(()=>{
               return {
                 bitBT:{
-                  sell:Number(jsonResponse.sell)
+                  sell:Number(jsonResponse.sell),
+                  res:'success'
                 }
               };
             });
           }) 
+      }
+
+
+      restartcex(){
+        clearInterval(this.cexbtid);
+        this.setState(()=>{
+          return {
+            cexBT:0
+          }
+        })
+        this.cexbtid=setInterval(()=>this.startCexioApi(),1500);
       }
 
 
@@ -286,6 +456,15 @@
                   </tr>
                 </tbody>
               </Table>
+            </Col>
+            <Col md="10">
+                <strong><a href={this.chbtcurl} target="_blank">CHBTC狀態</a>：</strong>{this.state.chbBT.res}|
+                <strong><a href={this.url4} target="_blank">Huo狀態</a>：</strong>{this.state.huoBT.res}|
+                <strong><a href={this.url3} target="_blank">Mai狀態</a>：</strong>{this.state.maiBT.res}<br />|
+                <strong><a href={this.url5} target="_blank">Bitoex狀態</a>：</strong>{this.state.bitBT.res}|
+                <strong><a href={this.url2} target="_blank">Cex狀態</a>：</strong>{this.state.cexBT.res}|<br />
+                <button onClick={()=>this.restartcex()}>重抓cex</button>
+                {this.state.countdown}秒後reload
             </Col>
           </Row>  
           <Row>
