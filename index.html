@@ -7,8 +7,8 @@
   <!-- <meta http-equiv="refresh" content="600"> -->
 
   <title>BTC App</title>
-<script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
   <!-- for Alert -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-transition-group/1.2.0/react-transition-group.min.js"></script>
@@ -47,7 +47,7 @@
       Tooltip,
       Col,Row
     } = Reactstrap;
-
+ 
     const proxyUrl ='https://cors-anywhere.herokuapp.com/'; 
 
     class App extends React.Component{ 
@@ -56,14 +56,16 @@
         this.state={
           USD:{buy:0,sell:0,avg:0},
           RMB:{buy:0,sell:0,avg:0},
-          chbBT:{buy:0,res:''},
+          localBT:{buy:0,res:'',link:''},
           huoBT:{buy:0,res:''},
+          chbBT:{buy:0,res:''},
           maiBT:{sell:0,res:''},
           bitBT:{sell:0,res:''},
           cexBT:{sell:0,res:''},
           countdown:600
         };
         this.proxyUrl =proxyUrl; 
+        this.localBitUrl='https://localbitcoins.com/buy-bitcoins-online/cn/china/.json';
         this.chbtcurl = 'http://api.chbtc.com/data/v1/ticker?currency=btc_cny';
         this.url='http://asper-bot-rates.appspot.com/currency.json';
         this.url2='https://cex.io/api/ticker/BTC/USD';
@@ -81,12 +83,13 @@
         // this.chbid=setInterval(()=>this.startChbtc(),5000);
         this.counterid=setInterval(()=>this.refresh(),1000)
 
+        this.checkLocal();
+        this.checkHuo();
+        this.checkChbtc();
 
         this.checkMai();
         this.checkCex();
-        this.checkHuo();
         this.checkBit();
-        this.checkChbtc();
       }
 
 
@@ -108,6 +111,66 @@
           window.location.reload();
         })
       }
+
+      // 抓LocalBit資料
+      checkLocal(){
+        do{this.testLocal()}
+        while(this.state.localBT.res==='success'){
+          this.testLocal();
+        }
+      }  
+
+      async testLocal(){
+        try{
+          let res = await fetch(this.proxyUrl +this.localBitUrl);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('LocalBitcoin success');
+            this.setState(()=>{
+              return {
+                localBT:{
+                  buy:Number(jsonResponse.data.ad_list[0].data.temp_price),
+                  res:'success',
+                  link:jsonResponse.data.ad_list[0].actions.public_view
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log('get Local error!');
+          console.log(error);
+        }
+      }      
+
+      // 抓火幣網資料
+      checkHuo(){
+        do{this.testHuo()}
+        while(this.state.huoBT.res==='success'){
+          this.testHuo();
+        }
+      }  
+
+      async testHuo(){
+        try{
+          let res = await fetch(this.proxyUrl +this.url4);
+          if(res.ok){
+            let jsonResponse = await res.json();
+            console.log('Huo success');
+            this.setState(()=>{
+              return {
+                huoBT:{
+                  buy:Number(jsonResponse.ticker.buy),
+                  res:'success'
+                }
+              };
+            });
+          }
+        }catch(error){
+          console.log(error);
+        }
+      }
+
+
 
       startChbtc(){ 
           fetch(this.proxyUrl +this.chbtcurl)
@@ -190,32 +253,7 @@
         }
       }  
 
-      async testHuo(){
-        try{
-          let res = await fetch(this.proxyUrl +this.url4);
-          if(res.ok){
-            let jsonResponse = await res.json();
-            console.log('Huo success');
-            this.setState(()=>{
-              return {
-                huoBT:{
-                  buy:Number(jsonResponse.ticker.buy),
-                  res:'success'
-                }
-              };
-            });
-          }
-        }catch(error){
-          console.log(error);
-        }
-      }
-
-      checkHuo(){
-        do{this.testHuo()}
-        while(this.state.huoBT.res==='success'){
-          this.testHuo();
-        }
-      }       
+     
 
       async testBit(){
         try{
@@ -409,27 +447,55 @@
 
 
       render(){
+        //localbitcoin
+        let lBuy = this.state.localBT.buy * this.state.RMB.avg;
+
+        // 火幣網
         let hBuy = this.state.huoBT.buy * this.state.RMB.avg;
+
+        //Cexio
         let cBuy = this.state.chbBT.buy * this.state.RMB.avg;
 
         let mSell = this.state.maiBT.sell;
+        let bSell = this.state.bitBT.sell;
+        let cSell = this.state.cexBT.sell*this.state.USD.avg;
+
+
+        //maiEarn-Local
+        let maiEarn1 = mSell-lBuy;
+        let maiEarn1P= (maiEarn1/lBuy)*100;
+
+
+        //BitoexEarn-Local
+        let bitEarn1 = bSell-lBuy;
+        let bitEarn1P= (bitEarn1/lBuy)*100;
+
+        //CexioEarn-Local
+        let cexEarn1 = cSell-lBuy;
+        let cexEarn1P= (cexEarn1/lBuy)*100;
+
+
+        //maincoinEarn-火幣網
         let maiEarn = mSell-hBuy;
         let maiEarnP= (maiEarn/hBuy)*100;
 
-        let bSell = this.state.bitBT.sell;
+        //Bitoex-火幣網
         let bitEarn = bSell-hBuy;
         let bitEarnP= ((bitEarn)/hBuy)*100;
 
-        let cSell = this.state.cexBT.sell*this.state.USD.avg;
+        //Cexio-火幣網
         let cexEarn = cSell-hBuy;
         let cexEarnP= (cexEarn/hBuy)*100;
 
+        //maincoinEarn2-chbtc
         let maiEarn2 = mSell -cBuy;
         let maiEarn2P = (maiEarn2/cBuy)*100;
 
+        //bitoexEarn-chbtc
         let bitEarn2 = bSell -cBuy;
         let bitEarn2P = (bitEarn2/cBuy)*100;
 
+        //CexioEarn-chbtc
         let cexEarn2 = cSell-cBuy;
         let cexEarn2P= (cexEarn2/cBuy)*100;
 
@@ -438,6 +504,7 @@
 
       return (
         <div>
+        {/* 狀態列*/}
           <Row>
             <Col md="2">
               <Table bordered size="sm">
@@ -460,13 +527,53 @@
             <Col md="10">
                 <strong><a href={this.chbtcurl} target="_blank">CHBTC狀態</a>：</strong>{this.state.chbBT.res}|
                 <strong><a href={this.url4} target="_blank">Huo狀態</a>：</strong>{this.state.huoBT.res}|
-                <strong><a href={this.url3} target="_blank">Mai狀態</a>：</strong>{this.state.maiBT.res}<br />|
+                <strong><a href={this.url3} target="_blank">Mai狀態</a>：</strong>{this.state.maiBT.res}|
                 <strong><a href={this.url5} target="_blank">Bitoex狀態</a>：</strong>{this.state.bitBT.res}|
-                <strong><a href={this.url2} target="_blank">Cex狀態</a>：</strong>{this.state.cexBT.res}|<br />
+                <strong><a href={this.url2} target="_blank">Cex狀態</a>：</strong>{this.state.cexBT.res}|
+                <strong><a href={this.localBitUrl} target="_blank">LocalBit狀態</a>：</strong>{this.state.localBT.res}|
                 <button onClick={()=>this.restartcex()}>重抓cex</button>
                 {this.state.countdown}秒後reload
             </Col>
           </Row>  
+        {/*localbitcoin*/}
+       <Row>
+            <Col md="5">
+              <LocalBitApi localBT={this.state.localBT} RMB={this.state.RMB} USD={this.state.USD}/>
+            </Col>
+            <Col md="5">
+              <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="7" ><center>出金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">交易所</th>
+                    <th scope="row">Qty</th>
+                    <th scope="row">賣價</th>
+                    <th scope="row">匯率</th>
+                    <th scope="row">NTD</th>
+                    <th scope="row">RMB</th>
+                    <th scope="row">USD</th>
+                  </tr>
+                  <MaicoinApi maiBT={this.state.maiBT} USD={this.state.USD} RMB={this.state.RMB}/>
+                  <BitoexApi bitBT={this.state.bitBT} USD={this.state.USD} RMB={this.state.RMB}/>
+                  <CexioApi cexBT={this.state.cexBT} USD={this.state.USD}  RMB={this.state.RMB}/>
+                </tbody>
+              </Table>
+            </Col>
+            <Col md="2">
+              <Earn maiEarn={maiEarn1}
+                    maiEarnP={maiEarn1P}
+                    bitEarn={bitEarn1}
+                    bitEarnP={bitEarn1P}
+                    cexEarn={cexEarn1}
+                    cexEarnP={cexEarn1P}
+                    />
+            </Col>
+          </Row>
+        {/* 火幣網*/}
           <Row>
             <Col md="5">
               <HuobiApi huoBT={this.state.huoBT} RMB={this.state.RMB} USD={this.state.USD}/>
@@ -504,6 +611,7 @@
                     />
             </Col>
           </Row>
+        {/* CHBTC*/}  
           <Row>
             <Col md="5">
               <ChbtcApi chbBT={this.state.chbBT} RMB={this.state.RMB} USD={this.state.USD}/>
@@ -541,6 +649,7 @@
                     />
             </Col>
           </Row>
+        {/*現金匯率*/}
           <Row>
             <Col md="3">
               <Table bordered size="sm">
@@ -556,6 +665,7 @@
           </div>
     ); } } 
 
+//損益試算
     class Earn extends React.Component{
       render(){
         let tdStyle = {};
@@ -595,7 +705,7 @@
         );
       }
     }
-
+//銀行現金匯率
     class Bank extends React.Component{
       constructor(props){
         super(props);
@@ -645,8 +755,45 @@
         );
       }
     }
+//LocalBitCoin入金-9/28
+//火幣網入金
+class LocalBitApi extends React.Component{
+      render(){
+        return(
+          <Table bordered size="sm">
+                <thead className="thead-default">
+                  <tr>
+                    <th scope="col" colSpan="8"><center>入金</center></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="col">幣種</th>
+                    <th scope="col">交易所</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">買價(<a href={this.props.localBT.link} target='_blank'>link</a>)</th>
+                    <th scope="col">匯率</th>
+                    <th scope="col">NTD</th>
+                    <th scope="col">RMB</th>
+                    <th scope="col">USD</th>
+                  </tr>
+                  <tr>
+                    <td>BTC</td>
+                    <td>LocalBit</td>
+                    <td>1</td>
+                    <td style={{color:'blue',fontWeight:'bold'}}>{accounting.formatNumber(this.props.localBT.buy,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{this.props.RMB.avg}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.props.localBT.buy*this.props.RMB.avg,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber(this.props.localBT.buy,2)}</td>
+                    <td style={{color:'#596043',fontWeight:'bold'}}>{accounting.formatNumber((this.props.localBT.buy*this.props.RMB.avg)/this.props.USD.avg,2)}</td>
+                  </tr>
+                </tbody>
+          </Table>
+        );
+      }
+    }
 
-
+//火幣網入金
     class HuobiApi extends React.Component{
       render(){
         return(
@@ -682,7 +829,7 @@
         );
       }
     }
-
+//CHBTC入金
     class ChbtcApi extends React.Component{
       render(){
         return(
@@ -719,7 +866,7 @@
       }
     }
 
-
+//Maicoin出金
     class MaicoinApi extends React.Component{
       render(){
         return(
@@ -735,7 +882,7 @@
         );
       }
     }
-
+//Bitoex出金
     class BitoexApi extends React.Component{
       render(){
         return(
@@ -751,7 +898,7 @@
         );
       }
     }
-
+//Cexio出金
     class CexioApi extends React.Component{
       render(){
         return(
