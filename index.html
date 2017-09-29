@@ -49,6 +49,7 @@
     } = Reactstrap;
  
     const proxyUrl ='https://cors-anywhere.herokuapp.com/'; 
+    const proxyUrl2 = 'https://cors.now.sh/';
 
     class App extends React.Component{ 
       constructor(props){
@@ -217,18 +218,30 @@
       }
       async testCex(){
         try{
-          let res = await fetch(this.proxyUrl +this.url2);
+          let res = await fetch(proxyUrl2 +this.url2);
+          console.log('res',res);
           if(res.ok){
+            console.log('jsonResponse',jsonResponse);
             let jsonResponse = await res.json();
             console.log('Cexi success');
-            this.setState(()=>{
-              return {
-                cexBT:{
-                  sell:Number(jsonResponse.ask),
-                  res:'success'
-                }
-              };
+
+            let newState=React.addons.update(this.state,{
+              cexBT:{sell:{$set:Number(jsonResponse.ask)},res:{$set:'success'}}
             });
+            this.setState(()=>newState);
+
+            // this.setState(()=>{
+            //   return {
+            //     cexBT:{
+            //       sell:Number(jsonResponse.ask),
+            //       res:'success'
+            //     }
+            //   };
+            // });
+            console.log(this.state);
+          }else{
+            console.log('cex problem!');
+            console.log(res);
           }
         }catch(error){
           console.log(error);
@@ -359,6 +372,7 @@
 
 
       render(){
+        // console.log('cexBT.sell:',this.state.cexBT.sell);
         let lBuy  = this.state.localBT.buy * this.state.RMB.avg;
         let hBuy  = this.state.huoBT.buy * this.state.RMB.avg;
         let cBuy  = this.state.chbBT.buy * this.state.RMB.avg;
@@ -392,8 +406,8 @@
         let bitEarn1P= (bitEarn1/lBuy)*100;
 
         //CexioEarn-Local
-        console.log('cSell',cSell);
-        console.log('lBuy',lBuy);
+        // console.log('cSell',cSell);
+        // console.log('lBuy',lBuy);
         let cexEarn1 = cSell-lBuy;
         let cexEarn1P= (cexEarn1/lBuy)*100;
 
@@ -587,6 +601,14 @@
               </Table>
             </Col>
           </Row>
+          <Row>
+            <Col md="12">
+              <Alert color="success">
+                State: <pre>{JSON.stringify(this.state.USD)}</pre>
+               </Alert>
+          
+            </Col>
+            </Row>
           </div>
     ); } } 
 
@@ -804,7 +826,7 @@ class LocalBitApi extends React.Component{
         let sell   = this.props.maiBT.sell;
         let avgRMB = this.props.RMB.avg;
         let avgUSD = this.props.USD.avg;
-        console.log('avgRMB:',this.props);
+        // console.log('avgRMB:',this.props);
 
         return(
           <tr>
